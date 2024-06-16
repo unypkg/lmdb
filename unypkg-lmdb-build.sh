@@ -35,13 +35,13 @@ mkdir -pv /uny/sources
 cd /uny/sources || exit
 
 pkgname="lmdb"
-pkggit="https://github.com/lmdb/lmdb.git refs/tags/*"
+pkggit="https://git.openldap.org/openldap/openldap.git refs/tags/LMDB_*"
 gitdepth="--depth=1"
 
 ### Get version info from git remote
 # shellcheck disable=SC2086
-latest_head="$(git ls-remote --refs --tags --sort="v:refname" $pkggit | grep -E "v[0-9.]+$" | tail --lines=1)"
-latest_ver="$(echo "$latest_head" | grep -o "v[0-9.].*" | sed "s|v||")"
+latest_head="$(git ls-remote --refs --tags --sort="v:refname" $pkggit | grep -E "LMDB_[0-9.]+$" | tail --lines=1)"
+latest_ver="$(echo "$latest_head" | grep -o "LMDB_[0-9.].*" | sed "s|LMDB_||")"
 latest_commit_id="$(echo "$latest_head" | cut --fields=1)"
 
 version_details
@@ -50,6 +50,8 @@ version_details
 echo "newer" >release-"$pkgname"
 
 git_clone_source_repo
+mv -v openldap/libraries/liblmdb/* openldap/
+rm -rf openldap/libraries
 
 #cd "$pkgname" || exit
 #./autogen.sh
@@ -77,12 +79,9 @@ get_include_paths
 
 unset LD_RUN_PATH
 
-./configure \
-    --prefix=/uny/pkg/"$pkgname"/"$pkgver"
-
-make -j"$(nproc)"
-make -j"$(nproc)" check 
-make -j"$(nproc)" install
+XCFLAGS=-fPIC make -j"$(nproc)"
+make -j"$(nproc)" test
+make prefix=/uny/pkg/"$pkgname"/"$pkgver" install
 
 ####################################################
 ### End of individual build script
